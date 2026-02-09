@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HAKI: Misi Integritas</title>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        /* Typography */
+        body {
+            font-family: 'Nunito', sans-serif;
+            overscroll-behavior: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            background-image: url('https://i.imgur.com/aI0Ospj.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+        }
+
+        h1, h2, h3, h4, .font-display {
+            font-family: 'Fredoka', sans-serif;
+        }
+
+        .card-solid {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+        
+        @keyframes bounce-in {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+        
+        .animate-bounce-in {
+            animation: bounce-in 0.5s ease-out forwards;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        /* Glass Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        }
+        
+        .glass-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.3);
+        }
+    </style>
+</head>
+<body class="text-slate-900 antialiased overflow-hidden h-[100dvh] w-screen selection:bg-yellow-200 selection:text-yellow-900">
+    <div id="root" class="h-full w-full"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- ICONS (SAFE VERSION) ---
+        const IconWrapper = ({ children, size = 24, className = "", ...props }) => (
+            <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width={size} 
+                height={size} 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className={className}
+                {...props}
+            >
+                {children}
+            </svg>
+        );
+
+        const Shield = (p) => <IconWrapper {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></IconWrapper>;
+        const AlertTriangle = (p) => <IconWrapper {...p}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></IconWrapper>;
+        const Star = (p) => <IconWrapper {...p}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></IconWrapper>;
+        const BookOpen = (p) => <IconWrapper {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconWrapper>;
+        const User = (p) => <IconWrapper {...p}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>;
+        const CheckCircle = (p) => <IconWrapper {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>;
+        const RefreshCw = (p) => <IconWrapper {...p}><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></IconWrapper>;
+        const Maximize = (p) => <IconWrapper {...p}><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></IconWrapper>;
+        const Minimize = (p) => <IconWrapper {...p}><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></IconWrapper>;
+        const Music = (p) => <IconWrapper {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></IconWrapper>;
+        const Home = (p) => <IconWrapper {...p}><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconWrapper>;
+        const ArrowRight = (p) => <IconWrapper {...p}><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></IconWrapper>;
+        const Trash2 = (p) => <IconWrapper {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></IconWrapper>;
+        const Trophy = (p) => <IconWrapper {...p}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconWrapper>;
+        const Check = (p) => <IconWrapper {...p}><polyline points="20 6 9 17 4 12"/></IconWrapper>;
+        const Clock = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></IconWrapper>;
+        const X = (p) => <IconWrapper {...p}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></IconWrapper>;
+
+        // --- DATA ---
+
+        const HERO_DATA = {
+            JUJUR: {
+                id: 'JUJUR', label: 'JUJUR', heroName: 'Nurani',
+                img: 'https://i.imgur.com/nYbDmKh.png',
+                colorClass: 'bg-red-600', borderClass: 'border-red-800', textClass: 'text-white',
+                heroDesc: 'Memiliki kemampuan mendeteksi kebohongan melalui cahaya mata dan mengungkap kebenaran.',
+                valueDesc: 'Berkata benar sesuai dengan yang dilihat, didengar, dan dirasakan.',
+                attitudes: [
+                    { title: 'Mengembalikan Barang Temuan', desc: 'Segera mengembalikan barang milik orang lain kepada pemilik atau pihak berwenang.' },
+                    { title: 'Tidak Menyontek', desc: 'Mengerjakan ujian dengan usaha sendiri tanpa melihat jawaban teman.' },
+                    { title: 'Mengakui Kesalahan', desc: 'Mengakui kesalahan tanpa menyalahkan orang lain atau mencari alasan.' },
+                    { title: 'Bersikap Transparan dalam Keuangan', desc: 'Melaporkan penggunaan uang sesuai pengeluaran sebenarnya tanpa mark-up.' }
+                ]
+            },
+            ADIL: {
+                id: 'ADIL', label: 'ADIL', heroName: 'Agent Dila',
+                img: 'https://i.imgur.com/rYVyj0V.png',
+                colorClass: 'bg-yellow-400', borderClass: 'border-yellow-600', textClass: 'text-black',
+                heroDesc: 'Mampu melihat masa lalu untuk memastikan keadilan dan memahami latar belakang individu.',
+                valueDesc: 'Menempatkan sesuatu pada tempatnya, konsisten, selaras, seimbang, dan berpegang pada kebenaran.',
+                attitudes: [
+                    { title: 'Memberikan Kesempatan yang Sama', desc: 'Menyediakan peluang setara bagi semua individu untuk berkembang.' },
+                    { title: 'Menghindari Diskriminasi', desc: 'Memperlakukan semua orang dengan hormat tanpa membedakan SARA.' },
+                    { title: 'Membagi Tugas Secara Merata', desc: 'Mendistribusikan pekerjaan sesuai beban kerja masing-masing.' },
+                    { title: 'Membagikan Sumber Daya Secara Proporsional', desc: 'Mendistribusikan fasilitas sesuai kebutuhan dan kontribusi.' }
+                ]
+            },
+            TANGGUNG_JAWAB: {
+                id: 'TANGGUNG_JAWAB', label: 'TANGGUNG JAWAB', heroName: 'Halilintar Baja',
+                img: 'https://i.imgur.com/NdoN9Nm.png',
+                colorClass: 'bg-[#5D4037]', borderClass: 'border-[#3E2723]', textClass: 'text-white',
+                heroDesc: 'Memperbaiki kerusakan fisik dan moral, membimbing generasi muda.',
+                valueDesc: 'Menerima konsekuensi akibat perkataan dan perbuatan berdasarkan nilai moral/aturan.',
+                attitudes: [
+                    { title: 'Tidak Menyalahgunakan Jabatan', desc: 'Menggunakan posisi sesuai tanggung jawab tanpa mencari keuntungan pribadi.' },
+                    { title: 'Menggunakan Sumber Daya dengan Bijak', desc: 'Mengelola waktu, uang, dan fasilitas secara efisien.' },
+                    { title: 'Mengembalikan Barang Pinjaman', desc: 'Mengembalikan barang dalam kondisi baik dan tepat waktu.' },
+                    { title: 'Menyelesaikan Tugas dengan Baik', desc: 'Melaksanakan pekerjaan hingga tuntas sesuai standar.' }
+                ]
+            },
+            MANDIRI: {
+                id: 'MANDIRI', label: 'MANDIRI', heroName: 'Mandala',
+                img: 'https://i.imgur.com/1Ds59QP.png',
+                colorClass: 'bg-orange-500', borderClass: 'border-orange-800', textClass: 'text-white', // ORANGE
+                heroDesc: 'Bertahan hidup di hutan sendiri, menjaga alam tanpa bergantung teknologi modern.',
+                valueDesc: 'Punya inisiatif dan tidak menggantungkan keputusan kepada orang lain.',
+                attitudes: [
+                    { title: 'Membuat Keputusan Sendiri', desc: 'Berani mengambil keputusan tanpa selalu menunggu arahan.' },
+                    { title: 'Mengelola Waktu dengan Baik', desc: 'Menyusun jadwal kegiatan sehari-hari secara mandiri.' },
+                    { title: 'Mengelola Keuangan Pribadi', desc: 'Mengatur pengeluaran/pemasukan sendiri dengan bijak.' },
+                    { title: 'Menolak Bantuan yang Tidak Perlu', desc: 'Agar dapat belajar dan berkembang sendiri.' }
+                ]
+            },
+            BERANI: {
+                id: 'BERANI', label: 'BERANI', heroName: 'Dewi Samudra',
+                img: 'https://i.imgur.com/ZwJT0AF.png',
+                colorClass: 'bg-blue-600', borderClass: 'border-blue-800', textClass: 'text-white',
+                heroDesc: 'Mengendalikan ombak, tak takut menghadapi ancaman demi melindungi laut.',
+                valueDesc: 'Tidak takut mengatakan yang benar dan menolak ajakan berbuat tidak baik.',
+                attitudes: [
+                    { title: 'Melaporkan Tindakan Korupsi', desc: 'Berani lapor ke pihak berwenang meskipun pelakunya kuat.' },
+                    { title: 'Menolak Ajakan Berbuat Curang', desc: 'Tidak tergoda menyontek atau manipulasi data meski diajak teman.' },
+                    { title: 'Menolak Gratifikasi dan Suap', desc: 'Menolak pemberian yang bertujuan memengaruhi keputusan.' },
+                    { title: 'Bersikap Tegas Terhadap Pelanggaran', desc: 'Tidak ragu menegur teman yang melanggar aturan.' }
+                ]
+            },
+            SEDERHANA: {
+                id: 'SEDERHANA', label: 'SEDERHANA', heroName: 'Putri Flora',
+                img: 'https://i.imgur.com/8wQns75.png',
+                colorClass: 'bg-green-600', borderClass: 'border-green-800', textClass: 'text-white', // HIJAU
+                heroDesc: 'Menyuburkan tanah, hidup sederhana dan berbagi hasil panen.',
+                valueDesc: 'Bersahaja, tidak berlebih-lebihan, dan selalu bersyukur.',
+                attitudes: [
+                    { title: 'Mengutamakan Kebutuhan Daripada Keinginan', desc: 'Membeli barang karena butuh, bukan gengsi.' },
+                    { title: 'Bersyukur Atas Apa yang Dimiliki', desc: 'Merasa cukup tanpa iri pada orang lain.' },
+                    { title: 'Menghindari Gaya Hidup Mewah', desc: 'Tidak memaksakan diri tampil mewah di luar kemampuan.' },
+                    { title: 'Menggunakan Barang Secara Efisien', desc: 'Memanfaatkan barang hingga habis masa pakainya.' }
+                ]
+            },
+            DISIPLIN: {
+                id: 'DISIPLIN', label: 'DISIPLIN', heroName: 'Penjaga Masa',
+                img: 'https://i.imgur.com/GozTjD9.png',
+                colorClass: 'bg-purple-600', borderClass: 'border-purple-900', textClass: 'text-white',
+                heroDesc: 'Mampu memperlambat waktu, namun selalu tepat waktu dan patuh aturan.',
+                valueDesc: 'Konsisten, tertib, menepati janji, dan taat aturan.',
+                attitudes: [
+                    { title: 'Datang Tepat Waktu', desc: 'Hadir di sekolah/kerja sesuai waktu yang disepakati.' },
+                    { title: 'Mengikuti Aturan yang Berlaku', desc: 'Mematuhi peraturan tanpa mencari celah pelanggaran.' },
+                    { title: 'Tidak Menunda Pekerjaan', desc: 'Segera mengerjakan tugas, tidak menunggu batas waktu.' },
+                    { title: 'Mengikuti Prosedur yang Ditetapkan', desc: 'Melakukan kegiatan sesuai tata cara tanpa jalan pintas.' }
+                ]
+            },
+            PEDULI: {
+                id: 'PEDULI', label: 'PEDULI', heroName: 'Kuasa Raga',
+                img: 'https://i.imgur.com/72L24HC.png',
+                colorClass: 'bg-pink-500', borderClass: 'border-pink-700', textClass: 'text-white',
+                heroDesc: 'Menyembuhkan penyakit, berkeliling ke daerah terpencil memberi bantuan.',
+                valueDesc: 'Memiliki kasih sayang, empati, dan keberpihakan kepada sesama.',
+                attitudes: [
+                    { title: 'Aktif dalam Kegiatan Sosial', desc: 'Ikut donor darah, penggalangan dana, dll.' },
+                    { title: 'Mendengarkan dengan Empati', desc: 'Memberi perhatian pada teman yang punya masalah.' },
+                    { title: 'Menghindari Pemborosan', desc: 'Menggunakan listrik/air dengan bijak untuk menjaga lingkungan.' },
+                    { title: 'Menolong Teman', desc: 'Membantu teman yang kesulitan belajar tanpa harap imbalan.' }
+                ]
+            },
+            KERJA_KERAS: {
+                id: 'KERJA_KERAS', label: 'KERJA KERAS', heroName: 'Kesatria Karsa',
+                img: 'https://i.imgur.com/Yh7fWdr.png',
+                colorClass: 'bg-gray-600', borderClass: 'border-gray-800', textClass: 'text-white', // ABU-ABU
+                heroDesc: 'Kekuatan fisik luar biasa, simbol perjuangan, membangun infrastruktur.',
+                valueDesc: 'Melakukan upaya sungguh-sungguh hingga target tercapai.',
+                attitudes: [
+                    { title: 'Belajar Dengan Tekun', desc: 'Konsisten belajar, bukan hanya saat mau ujian.' },
+                    { title: 'Tidak Mudah Menyerah', desc: 'Mencari solusi saat sulit, bukan menyerah.' },
+                    { title: 'Menjaga Etos Kerja', desc: 'Bekerja penuh semangat, tidak bermalas-malasan.' },
+                    { title: 'Menghargai Proses', desc: 'Menyadari sukses butuh waktu, tidak cari jalan pintas tak etis.' }
+                ]
+            }
+        };
+
+        const CARD_TYPES = { HERO: 'HERO', VALUE: 'NILAI', ATTITUDE: 'SIKAP', CORRUPTION: 'KORUPSI', COUNTER: 'LAWAN' };
+
+        // --- COMPONENTS ---
+
+        const MusicPlayer = () => {
+            const [isPlaying, setIsPlaying] = useState(false);
+            const audioRef = useRef(null);
+
+            useEffect(() => {
+                audioRef.current = new Audio('https://github.com/belajarituseru39-gif/haki/raw/refs/heads/main/HAKI%20(Hero%20Anti%20Korupsi).mp3'); 
+                audioRef.current.loop = true;
+                audioRef.current.volume = 0.4;
+                return () => { if(audioRef.current) audioRef.current.pause(); };
+            }, []);
+
+            const toggleMusic = () => {
+                if (isPlaying) audioRef.current.pause();
+                else audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+                setIsPlaying(!isPlaying);
+            };
+
+            return (
+                <button onClick={toggleMusic} className="fixed top-2 left-2 md:top-4 md:left-4 z-[70] bg-white/90 text-indigo-900 hover:bg-white p-3 rounded-full shadow-lg transition-transform active:scale-95 border-2 border-indigo-200" title={isPlaying ? "Matikan Musik" : "Putar Musik"}>
+                    {isPlaying ? <Music size={24} /> : <div className="relative"><Music size={24} /><div className="absolute top-0 right-0 w-full h-full border-t-2 border-red-500 rotate-45 transform origin-center"></div></div>}
+                </button>
+            );
+        };
+
+        const FullScreenToggle = () => {
+            const toggle = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(console.log);
+                } else {
+                    document.exitFullscreen();
+                }
+            };
+            return (
+                <button onClick={toggle} className="fixed top-2 right-2 md:top-4 md:right-4 z-[70] bg-slate-900/90 text-white hover:bg-black p-3 rounded-full shadow-lg transition-transform active:scale-95 border-2 border-slate-700" title="Fullscreen">
+                    <Maximize size={24} />
+                </button>
+            );
+        };
+
+        const WarningModal = ({ message, onClose }) => (
+            <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-bounce-in">
+                <div className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full text-center border-4 border-yellow-400">
+                    <div className="flex justify-center mb-4">
+                        <div className="bg-yellow-100 p-4 rounded-full">
+                            <AlertTriangle size={48} className="text-yellow-600" />
+                        </div>
+                    </div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2 font-display">PERINGATAN!</h3>
+                    <p className="text-slate-600 font-bold mb-6">{message}</p>
+                    <button onClick={onClose} className="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-8 rounded-full shadow-lg transition-transform active:scale-95 w-full">
+                        MENGERTI
+                    </button>
+                </div>
+            </div>
+        );
+
+        // --- NEW: TURN CHANGE MODAL (UPDATED) ---
+        const TurnChangeModal = ({ player, onConfirm }) => {
+            // Get player's hero image if available, else null
+            const heroCard = player.board[0];
+            const heroImg = heroCard ? heroCard.imgUrl : null;
+
+            return (
+                 <div className="fixed inset-0 z-[90] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-bounce-in">
+                    <div className={`glass-panel p-8 rounded-[2rem] max-w-sm w-full text-center border-4 ${player.color.split(' ')[0]}`}>
+                        <h2 className="text-3xl font-black text-white mb-2 font-display drop-shadow-md">GILIRAN</h2>
+                        <h3 className="text-4xl font-black text-yellow-400 mb-6 font-display drop-shadow-md">{player.name}</h3>
+                        
+                        <div className="flex justify-center mb-8">
+                            <div className="bg-white/20 p-2 rounded-full backdrop-blur-sm border-4 border-white/50 animate-pulse w-32 h-32 flex items-center justify-center overflow-hidden shadow-2xl">
+                                {heroImg ? (
+                                    <img src={heroImg} alt="Hero Avatar" className="w-full h-full object-cover rounded-full" />
+                                ) : (
+                                    <User size={64} className="text-white" />
+                                )}
+                            </div>
+                        </div>
+                        
+                        <button onClick={onConfirm} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-2xl text-xl shadow-xl transition-transform hover:scale-105 active:scale-95 w-full">
+                            SIAP!
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- DRAWN CARD PREVIEW MODAL ---
+        const DrawnCardPreview = ({ card, onClose, onDiscard, onKeep }) => {
+            if (!card) return null;
+            
+            return (
+                <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-bounce-in">
+                    <div className="flex flex-col items-center gap-6 w-full max-w-sm md:max-w-md bg-white/10 rounded-3xl p-6 border border-white/20 shadow-2xl backdrop-blur-md">
+                        <h2 className="text-white text-2xl md:text-3xl font-black font-display drop-shadow-lg text-center animate-bounce">
+                            {card.type === CARD_TYPES.CORRUPTION ? "⚠️ KORUPSI TERDETEKSI!" : 
+                             card.type === CARD_TYPES.COUNTER ? "🛡️ PELINDUNG DITEMUKAN!" : 
+                             "KARTU BARU!"}
+                        </h2>
+                        
+                        <div className="transform scale-110 md:scale-125 transition-transform duration-300 hover:scale-[1.3] my-4">
+                            <Card data={card} size="md" isPlayable={false} />
+                        </div>
+
+                        <div className="flex gap-4 mt-4 w-full justify-center">
+                            {(card.type === CARD_TYPES.CORRUPTION || card.type === CARD_TYPES.COUNTER) ? (
+                                <button onClick={onClose} className="bg-white text-indigo-900 font-bold py-3 px-8 rounded-full shadow-xl hover:scale-105 transition-all text-lg w-full">
+                                    LANJUT
+                                </button>
+                            ) : (
+                                <>
+                                    <button onClick={onDiscard} className="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg border-b-4 border-red-700 active:border-b-0 active:translate-y-1 flex items-center gap-2 flex-1 justify-center">
+                                        <Trash2 size={20}/> BUANG
+                                    </button>
+                                    <button onClick={onKeep} className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 flex items-center gap-2 flex-1 justify-center">
+                                        <Check size={20}/> SIMPAN
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Card = ({ data, onClick, isPlayable, size = 'md' }) => {
+            if (!data) return null;
+            
+            let colorClass = 'bg-white';
+            let borderClass = 'border-slate-300';
+            let textClass = 'text-slate-900';
+            let icon = null;
+
+            if (data.type === CARD_TYPES.CORRUPTION) {
+                colorClass = 'bg-red-600'; 
+                borderClass = 'border-red-900';
+                textClass = 'text-white';
+                icon = <AlertTriangle size={16} className="text-white" />;
+            } else if (data.type === CARD_TYPES.COUNTER) {
+                colorClass = 'bg-purple-600';
+                borderClass = 'border-purple-900';
+                textClass = 'text-white';
+                icon = <Shield size={16} className="text-white" />;
+            } else if (data.dimension && HERO_DATA[data.dimension]) {
+                const theme = HERO_DATA[data.dimension];
+                colorClass = theme.colorClass;
+                borderClass = theme.borderClass;
+                textClass = theme.textClass;
+            }
+
+            const sizeClasses = {
+                sm: 'w-20 h-28 text-[9px] leading-tight', 
+                md: 'w-28 h-40 md:w-36 md:h-52 lg:w-48 lg:h-72 text-xs md:text-sm lg:text-base', 
+                lg: 'w-64 h-96 md:w-80 md:h-[30rem] text-base md:text-lg'
+            };
+            const currentSize = sizeClasses[size] || sizeClasses.md;
+
+            return (
+                <div 
+                    onClick={() => isPlayable && onClick(data)} 
+                    className={`
+                        relative ${currentSize} rounded-xl border-4 flex flex-col shadow-lg select-none transition-transform duration-200 card-solid
+                        ${colorClass} ${borderClass}
+                        ${isPlayable ? 'cursor-pointer hover:-translate-y-2 hover:shadow-xl active:scale-95' : ''}
+                        overflow-hidden
+                    `}
+                >
+                    {/* Header Strip */}
+                    <div className={`flex justify-between items-center px-2 py-1 bg-black/20 w-full shrink-0 h-[15%] ${textClass}`}>
+                        <span className="font-display font-bold uppercase tracking-tight truncate w-full text-left">{data.type}</span>
+                        {size !== 'sm' && <div className="shrink-0 ml-1 opacity-90">{icon}</div>}
+                    </div>
+
+                    {/* Content Area */}
+                    <div className={`flex-1 flex flex-col items-center justify-center p-2 text-center h-[85%] relative ${textClass}`}>
+                        
+                        {/* HERO CARD CONTENT (IMAGE ONLY) */}
+                        {data.type === CARD_TYPES.HERO && data.imgUrl ? (
+                            <div className="w-full h-full flex items-center justify-center mb-1 p-2">
+                                <img src={data.imgUrl} alt={data.content} className="max-h-full max-w-full object-contain drop-shadow-md" />
+                            </div>
+                        ) : (
+                            /* OTHER CARDS CONTENT */
+                            <div className="w-full h-full flex flex-col items-center justify-center overflow-y-auto custom-scrollbar">
+                                {data.type === CARD_TYPES.CORRUPTION && <div className="text-5xl mb-3 drop-shadow-md">💸</div>}
+                                {data.type === CARD_TYPES.COUNTER && <div className="text-5xl mb-3 drop-shadow-md">🛡️</div>}
+                                
+                                {data.title && <div className="font-bold mb-2 leading-tight text-lg">{data.title}</div>}
+                                
+                                {/* VALUE CARD */}
+                                {data.type === CARD_TYPES.VALUE && (
+                                    <>
+                                        <div className="font-black text-xl md:text-2xl mb-2 border-b-2 border-black/20 pb-1 w-full text-center">
+                                            {data.content.split('(')[0]}
+                                        </div>
+                                        <div className="text-xs md:text-sm font-bold opacity-80 mb-2">
+                                            ({data.content.split('(')[1]}
+                                        </div>
+                                        <div className="font-medium leading-snug text-center px-1 text-sm italic">
+                                            "{data.desc}"
+                                        </div>
+                                    </>
+                                )}
+
+                                {/* ATTITUDE & OTHER CARDS */}
+                                {data.type !== CARD_TYPES.VALUE && (
+                                    <div className="font-medium leading-snug text-center px-1">
+                                        {data.content}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const BoardSlot = ({ index, card, isActive, onDrop }) => {
+            let label = "SLOT";
+            let borderColor = "border-slate-400";
+            let bgColor = "bg-white/50";
+            let textColor = "text-slate-500";
+            
+            if (index === 0) { label = "HERO"; borderColor = "border-yellow-500"; bgColor = "bg-yellow-50/50"; }
+            else if (index === 1) { label = "NILAI"; borderColor = "border-blue-500"; bgColor = "bg-blue-50/50"; }
+            else { label = `SIKAP ${index-1}`; borderColor = "border-green-500"; bgColor = "bg-green-50/50"; }
+
+            return (
+                <div 
+                    onClick={() => isActive && onDrop(index)} 
+                    className={`
+                        relative flex items-center justify-center rounded-xl border-2 border-dashed transition-all duration-300
+                        w-24 h-36 md:w-32 md:h-48 lg:w-40 lg:h-60 m-1 shrink-0
+                        ${card ? 'border-none bg-transparent' : `${borderColor} ${bgColor}`}
+                        ${isActive ? 'animate-pulse bg-white/80 scale-105 cursor-pointer shadow-[0_0_15px_rgba(255,255,255,0.8)]' : ''}
+                    `}
+                >
+                    {card ? <Card data={card} size="md" isPlayable={false} /> : (
+                        <div className={`text-center pointer-events-none flex flex-col items-center justify-center h-full w-full ${textColor} select-none`}>
+                            {index === 0 && <User size={32} className="mb-2 opacity-50"/>}
+                            {index === 1 && <Star size={32} className="mb-2 opacity-50"/>}
+                            {index > 1 && <CheckCircle size={32} className="mb-2 opacity-50"/>}
+                            <div className="font-display font-bold text-xs tracking-wider">{label}</div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- TUTORIAL SCREEN COMPONENT ---
+        const TutorialScreen = ({ onBack }) => (
+            <div className="h-full flex flex-col items-center justify-center p-4">
+                <div className="glass-panel p-8 rounded-[2rem] shadow-2xl max-w-4xl w-full border-4 border-white/50 animate-bounce-in overflow-y-auto max-h-[90vh] custom-scrollbar">
+                    <div className="flex justify-between items-center mb-6 border-b border-indigo-200 pb-4">
+                        <h2 className="text-4xl font-black text-indigo-900 font-display">CARA BERMAIN</h2>
+                        <button onClick={onBack} className="p-2 hover:bg-white/50 rounded-full transition-colors"><X size={32} className="text-indigo-900"/></button>
+                    </div>
+                    
+                    <div className="space-y-6 text-slate-800">
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">1</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Persiapan Agen</h3>
+                                <p>Pilih jumlah pemain (1-4). Setiap pemain akan mendapatkan <strong>1 Kartu Hero secara acak</strong> di awal permainan. Papan pemainmu terdiri dari slot Hero, Nilai, dan 4 Sikap.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">2</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Misi Utama</h3>
+                                <p>Tugasmu adalah melengkapi set integritas sesuai dengan Hero yang kamu miliki. Cari <strong>1 Kartu Nilai</strong> dan <strong>4 Kartu Sikap</strong> yang warnanya sama dengan Hero-mu.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">3</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Giliran & Waktu</h3>
+                                <p>Setiap giliran, ambil 1 kartu dari Dek Tertutup atau Tumpukan Terbuka. Waktu bermain adalah <strong>10 Menit</strong>.</p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">4</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Kartu Khusus</h3>
+                                <ul className="list-disc ml-5 mt-1 space-y-1">
+                                    <li><strong>Jenis Korupsi (Merah):</strong> Jika terambil, kartu akan menumpuk di area atas. Semua pemain kena penalti <strong>-20 Poin</strong>.</li>
+                                    <li><strong>Lawan Korupsi (Ungu):</strong> Jika terambil, kartu menumpuk di area atas. Kamu dapat bonus <strong>+20 Poin</strong>.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                         <div className="flex gap-4 items-start">
+                            <div className="bg-indigo-600 text-white font-bold w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1">5</div>
+                            <div>
+                                <h3 className="font-bold text-xl text-indigo-900">Pemenang</h3>
+                                <p>Pemain pertama yang melengkapi papannya menang! Jika waktu habis, pemain dengan skor tertinggi menang.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button onClick={onBack} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg mt-8 text-xl transition-transform hover:scale-[1.02]">KEMBALI</button>
+                </div>
+            </div>
+        );
+
+        // --- GAME LOGIC ---
+
+        const HakiGame = () => {
+            const [gameState, setGameState] = useState('INTRO');
+            const [playerCount, setPlayerCount] = useState(1);
+            const [playerNames, setPlayerNames] = useState(['Pemain 1', 'Pemain 2', 'Pemain 3', 'Pemain 4']);
+            const [players, setPlayers] = useState([]);
+            const [deck, setDeck] = useState([]);
+            const [discardPile, setDiscardPile] = useState([]);
+            const [turn, setTurn] = useState(0);
+            const [holdingCard, setHoldingCard] = useState(null);
+            const [phase, setPhase] = useState('DRAW');
+            const [message, setMessage] = useState('');
+            const [winner, setWinner] = useState(null);
+            const [isDeckOpen, setIsDeckOpen] = useState(false);
+            const [previewCard, setPreviewCard] = useState(null);
+            const [warningMessage, setWarningMessage] = useState(null);
+            const [timeLeft, setTimeLeft] = useState(600); // 10 Minutes
+            const [isTurnModalOpen, setIsTurnModalOpen] = useState(false);
+            
+            const [globalSlots, setGlobalSlots] = useState({ corruption: [], counter: [] });
+
+            // Sound Effects
+            const playSound = (type) => {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(600, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.5);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.3);
+                } else if (type === 'draw') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.1);
+                }
+            };
+
+            useEffect(() => {
+                let timer;
+                if (gameState === 'PLAY' && timeLeft > 0) {
+                    timer = setInterval(() => {
+                        setTimeLeft(prev => prev - 1);
+                    }, 1000);
+                } else if (timeLeft === 0 && gameState === 'PLAY') {
+                    endGameByTime();
+                }
+                return () => clearInterval(timer);
+            }, [gameState, timeLeft]);
+
+            const endGameByTime = () => {
+                const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+                setWinner(sortedPlayers[0]);
+                setGameState('END');
+            };
+
+            const formatTime = (seconds) => {
+                const m = Math.floor(seconds / 60);
+                const s = seconds % 60;
+                return `${m}:${s < 10 ? '0' : ''}${s}`;
+            };
+
+            const handleNameChange = (index, value) => {
+                const newNames = [...playerNames];
+                newNames[index] = value;
+                setPlayerNames(newNames);
+            };
+
+            const distributeHeroes = (playersArr) => {
+                const heroKeys = Object.keys(HERO_DATA);
+                const shuffledHeroes = heroKeys.sort(() => Math.random() - 0.5);
+                
+                return playersArr.map((player, index) => {
+                    const heroKey = shuffledHeroes[index];
+                    const theme = HERO_DATA[heroKey];
+                    const heroCard = { 
+                        uniqueId: `hero-${index}`, type: CARD_TYPES.HERO, dimension: theme.id, 
+                        content: `${theme.heroName} (Poin 35)`, 
+                        desc: theme.heroDesc, imgUrl: theme.img 
+                    };
+                    
+                    const newBoard = [...player.board];
+                    newBoard[0] = heroCard; 
+                    
+                    return { ...player, board: newBoard, score: 35 }; 
+                });
+            };
+
+            const generateDeck = (assignedPlayers) => {
+                let newDeck = [], id = 0;
+                
+                const assignedDimensions = assignedPlayers.map(p => p.board[0].dimension);
+                const allDimensionIds = Object.keys(HERO_DATA);
+                const remainingDimensions = allDimensionIds.filter(dim => !assignedDimensions.includes(dim));
+                const extraDimensions = remainingDimensions.sort(() => 0.5 - Math.random()).slice(0, 2);
+                const activeDimensions = [...assignedDimensions, ...extraDimensions];
+
+                activeDimensions.forEach(dimKey => {
+                    const theme = HERO_DATA[dimKey];
+                    newDeck.push({ 
+                        uniqueId: id++, type: CARD_TYPES.VALUE, dimension: theme.id, 
+                        content: `${theme.label} (Poin 10)`, 
+                        desc: theme.valueDesc 
+                    });
+                    
+                    theme.attitudes.forEach(att => {
+                        newDeck.push({ 
+                            uniqueId: id++, type: CARD_TYPES.ATTITUDE, dimension: theme.id, 
+                            title: att.title, content: att.desc 
+                        });
+                    });
+                });
+
+                const corruptions = [
+                    { t: 'Suap Menyuap', d: 'Pengguna layanan menawarkan imbalan kepada petugas layanan agar urusan lebih cepat, walau melanggar prosedur.' },
+                    { t: 'Pemerasan', d: 'Petugas layanan aktif menawarkan jasa atau meminta imbalan kepada pengguna jasa untuk mempercepat layanan, walau melanggar prosedur.' },
+                    { t: 'Gratifikasi', d: 'Pemberian hadiah dari pengguna layanan kepada pemberi layanan tanpa adanya penawaran atau transaksi apapun.' }
+                ];
+                // Limit corruption cards to 2 max in deck to make it balanced
+                const limitedCorruptions = corruptions.sort(() => 0.5 - Math.random()).slice(0, 2);
+                limitedCorruptions.forEach(c => newDeck.push({ uniqueId: id++, type: CARD_TYPES.CORRUPTION, content: c.d, title: c.t }));
+
+                const counters = [
+                    { t: 'Tolak Korupsi', d: 'Tindakan preventif individu untuk berkata "TIDAK" pada godaan korupsi dengan tegas dan sopan.' },
+                    { t: 'Lapor Berwenang', d: 'Tindakan kuratif/penindakan dengan melaporkan pelanggaran melalui saluran resmi.' },
+                    { t: 'Bangun Integritas', d: 'Menciptakan lingkungan sistemik yang mendukung kejujuran.' },
+                    { t: 'Tingkatkan Kesadaran', d: 'Edukasi untuk mencegah korupsi sejak dalam pikiran.' }
+                ];
+                counters.forEach(c => newDeck.push({ uniqueId: id++, type: CARD_TYPES.COUNTER, content: c.d, title: c.t }));
+
+                return newDeck.sort(() => Math.random() - 0.5);
+            };
+
+            const startGame = () => {
+                let initPlayers = Array.from({ length: playerCount }).map((_, i) => ({
+                    id: i, name: playerNames[i] || `Pemain ${i+1}`, board: Array(6).fill(null), score: 0,
+                    color: i === 0 ? 'border-indigo-500 bg-indigo-50' : i === 1 ? 'border-red-500 bg-red-50' : i === 2 ? 'border-green-500 bg-green-50' : 'border-orange-500 bg-orange-50'
+                }));
+
+                initPlayers = distributeHeroes(initPlayers);
+
+                const newDeck = generateDeck(initPlayers);
+                setDeck(newDeck);
+                setDiscardPile([]);
+                setPlayers(initPlayers);
+                setGlobalSlots({ corruption: [], counter: [] });
+                setTurn(0);
+                setPhase('DRAW');
+                setHoldingCard(null);
+                setPreviewCard(null);
+                setWinner(null);
+                setTimeLeft(600); 
+                setMessage(`Giliran ${initPlayers[0].name}: Cari Kartu Nilai & Sikap!`);
+                setGameState('PLAY');
+                setIsTurnModalOpen(true); // Open first turn modal
+            };
+
+            const nextTurn = () => {
+                const nextP = (turn + 1) % players.length;
+                setTurn(nextP);
+                setPhase('DRAW');
+                setMessage(`Giliran ${players[nextP].name}: Ambil Kartu!`);
+                setIsTurnModalOpen(true); // Trigger modal
+            };
+
+            const drawRandomCardWithWeights = (availableDeck) => {
+                if (availableDeck.length === 0) return null;
+
+                const getCardsByType = (type) => availableDeck.filter(c => c.type === type);
+                
+                const r = Math.random() * 100;
+                let targetType = '';
+
+                if (r < 5) targetType = CARD_TYPES.HERO; 
+                else if (r < 15) targetType = CARD_TYPES.CORRUPTION;
+                else if (r < 25) targetType = CARD_TYPES.COUNTER;
+                else if (r < 50) targetType = CARD_TYPES.VALUE;
+                else targetType = CARD_TYPES.ATTITUDE;
+
+                const candidates = getCardsByType(targetType);
+                
+                if (candidates.length > 0) {
+                    const pickedIndex = Math.floor(Math.random() * candidates.length);
+                    return candidates[pickedIndex];
+                } else {
+                    const fallbackIndex = Math.floor(Math.random() * availableDeck.length);
+                    return availableDeck[fallbackIndex];
+                }
+            };
+
+            const drawCard = (source) => {
+                let card;
+                if (source === 'DECK') {
+                    if (deck.length === 0) {
+                        if (discardPile.length === 0) { setMessage("Kartu Habis! Seri."); return; }
+                        const reshuffled = [...discardPile].sort(() => Math.random() - 0.5);
+                        setDeck(reshuffled);
+                        setDiscardPile([]);
+                        setMessage("Dek dikocok ulang...");
+                        return;
+                    }
+                    
+                    const newDeck = [...deck];
+                    card = newDeck.shift();
+                    setDeck(newDeck);
+                    playSound('draw');
+
+                } else {
+                    card = source;
+                    setDiscardPile(discardPile.filter(c => c.uniqueId !== card.uniqueId));
+                }
+
+                setIsDeckOpen(false);
+                setPreviewCard(card); 
+            };
+
+            const handlePreviewAction = (action) => {
+                const card = previewCard;
+                setPreviewCard(null);
+
+                if (card.type === CARD_TYPES.CORRUPTION) {
+                    setGlobalSlots(prev => ({ ...prev, corruption: [card, ...prev.corruption] }));
+                    const updatedPlayers = players.map(p => ({ ...p, score: p.score - 20 }));
+                    setPlayers(updatedPlayers);
+                    setMessage(`⚠️ KORUPSI: ${card.title}! Semua pemain -20 Poin.`);
+                    playSound('wrong');
+                    setTimeout(() => {
+                        nextTurn(); 
+                    }, 2500); 
+                    return;
+                }
+
+                if (card.type === CARD_TYPES.COUNTER) {
+                    setGlobalSlots(prev => ({ ...prev, counter: [card, ...prev.counter] }));
+                    const updatedPlayers = [...players];
+                    updatedPlayers[turn].score += 20;
+                    setPlayers(updatedPlayers);
+                    setMessage(`🛡️ LAWAN KORUPSI! ${players[turn].name} +20 Poin.`);
+                    playSound('correct');
+                    setTimeout(() => {
+                        nextTurn(); 
+                    }, 2500);
+                    return;
+                }
+
+                if (action === 'KEEP') {
+                    setHoldingCard(card);
+                    setPhase('ACTION');
+                    setMessage(`Pilih slot di papanmu untuk memasang kartu.`);
+                } else {
+                    setDiscardPile(prev => [card, ...prev]);
+                    nextTurn();
+                }
+            };
+
+            const placeCard = (slotIndex) => {
+                if (!holdingCard || phase !== 'ACTION') return;
+                const player = players[turn];
+                const board = [...player.board];
+                let error = null;
+
+                if (slotIndex === 0) {
+                    // HERO SLOT: Allow overwrite if it's a Hero card
+                    if (holdingCard.type !== CARD_TYPES.HERO) {
+                        error = "Slot 1 khusus HERO!";
+                    }
+                    // No error for overwriting existing hero, allowing the switch
+                } else if (slotIndex === 1) {
+                    // VALUE SLOT
+                    if (!board[0]) error = "Pasang HERO dulu!";
+                    else if (holdingCard.type !== CARD_TYPES.VALUE) error = "Slot 2 khusus Kartu NILAI!";
+                    else if (board[0].dimension !== holdingCard.dimension) error = "Warna/Nilai tidak cocok dengan Hero!";
+                    // Allow overwrite, no "already filled" error
+                } else {
+                    // ATTITUDE SLOTS
+                    if (!board[1]) error = "Pasang Kartu NILAI dulu!";
+                    else if (holdingCard.type !== CARD_TYPES.ATTITUDE) error = "Slot ini khusus Kartu SIKAP!";
+                    else if (board[0].dimension !== holdingCard.dimension) error = "Warna Sikap tidak cocok dengan Hero!";
+                    // Allow overwrite
+                }
+
+                if (error) {
+                    setWarningMessage(error);
+                    playSound('wrong');
+                    return;
+                }
+                
+                board[slotIndex] = holdingCard;
+                const updatedPlayers = [...players];
+                updatedPlayers[turn].board = board;
+                
+                if (holdingCard.type === CARD_TYPES.HERO) updatedPlayers[turn].score += 35;
+                else if (holdingCard.type === CARD_TYPES.VALUE) updatedPlayers[turn].score += 10;
+                else if (holdingCard.type === CARD_TYPES.ATTITUDE) updatedPlayers[turn].score += 5;
+
+                setPlayers(updatedPlayers);
+                setHoldingCard(null);
+                playSound('correct');
+
+                if (board.every(c => c !== null)) {
+                    setWinner(updatedPlayers[turn]);
+                    setGameState('END');
+                } else {
+                    nextTurn();
+                }
+            };
+
+            const discardFromHand = () => {
+                if (!holdingCard) return;
+                setDiscardPile(prev => [holdingCard, ...prev]);
+                setHoldingCard(null);
+                nextTurn();
+            };
+
+            const getGridClass = (count) => {
+                if (count === 1) return "flex justify-center w-full max-w-full p-2";
+                return "grid grid-cols-1 lg:grid-cols-2 gap-4 w-full p-2";
+            };
+
+            const getWinningSet = (winner) => {
+                if (!winner || !winner.board[0]) return [];
+                const dimension = winner.board[0].dimension;
+                const theme = HERO_DATA[dimension];
+                
+                const heroCard = { type: CARD_TYPES.HERO, dimension: theme.id, content: `${theme.heroName} (Poin 35)`, desc: theme.heroDesc, imgUrl: theme.img };
+                const valueCard = { type: CARD_TYPES.VALUE, dimension: theme.id, content: `${theme.label} (Poin 10)`, desc: theme.valueDesc };
+                const attitudeCards = theme.attitudes.map(att => ({ 
+                    type: CARD_TYPES.ATTITUDE, dimension: theme.id, title: att.title, content: att.desc 
+                }));
+
+                return [heroCard, valueCard, ...attitudeCards];
+            };
+
+            return (
+                <div className="h-full w-full relative">
+                    <MusicPlayer />
+                    <FullScreenToggle />
+                    {gameState !== 'INTRO' && <button onClick={() => setGameState('INTRO')} className="fixed top-2 left-16 md:top-4 md:left-20 z-[60] bg-white/90 text-indigo-900 p-3 rounded-full shadow-lg border-2 border-indigo-200 transition-transform active:scale-95"><Home size={24}/></button>}
+
+                    {previewCard && (
+                        <DrawnCardPreview 
+                            card={previewCard} 
+                            onClose={() => handlePreviewAction('CLOSE')} 
+                            onDiscard={() => handlePreviewAction('DISCARD')} 
+                            onKeep={() => handlePreviewAction('KEEP')} 
+                        />
+                    )}
+
+                    {warningMessage && (
+                        <WarningModal 
+                            message={warningMessage} 
+                            onClose={() => setWarningMessage(null)}
+                        />
+                    )}
+
+                    {isTurnModalOpen && (
+                        <TurnChangeModal 
+                            player={players[turn]} 
+                            onConfirm={() => setIsTurnModalOpen(false)}
+                        />
+                    )}
+
+                    {gameState === 'INTRO' && (
+                        <div className="h-full flex flex-col items-center justify-center p-4">
+                            <div className="glass-panel p-10 rounded-[3rem] shadow-2xl text-center max-w-6xl w-full animate-bounce-in overflow-y-auto max-h-[90vh] custom-scrollbar relative flex flex-col md:flex-row gap-8 items-center">
+                                <div className="flex-1 flex flex-col items-center justify-center">
+                                    <img src="https://i.imgur.com/hHQGqXf.png" alt="Logo HAKI" className="w-64 h-auto drop-shadow-xl animate-float mb-6" />
+                                    <h1 className="text-6xl md:text-8xl font-display font-black text-indigo-900 mb-2 tracking-tighter drop-shadow-sm text-center">HAKI</h1>
+                                    <h2 className="text-2xl md:text-4xl font-bold text-indigo-700 mb-4 text-center">Misi Integritas</h2>
+                                </div>
+                                
+                                <div className="flex-1 flex flex-col items-start text-left space-y-6">
+                                    <p className="text-lg text-slate-800 font-medium leading-relaxed bg-white/50 p-6 rounded-2xl border border-white/60 shadow-sm">
+                                        <strong>Panggilan untuk Agen!</strong> <br/><br/>
+                                        Dunia sedang dilanda badai <strong>korupsi, gratifikasi, dan suap-menyuap</strong>.
+                                        Kekacauan terjadi di mana-mana. Kami membutuhkanmu!
+                                        <br/><br/>
+                                        Jadilah <strong>Pahlawan Integritas</strong>. Kuatkan nilai-nilai luhur dan sikap jujurmu untuk menyelamatkan masa depan.
+                                        <br/>Siapkah kamu menjalankan misi ini?
+                                    </p>
+
+                                    <div className="flex flex-col gap-4 w-full">
+                                        <button onClick={() => setGameState('SETUP')} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-2xl text-xl shadow-xl hover:scale-105 transition-all flex items-center justify-center gap-3 w-full">
+                                            MULAI MISI <ArrowRight size={28}/>
+                                        </button>
+                                        <button onClick={() => setGameState('TUTORIAL')} className="bg-white hover:bg-indigo-50 text-indigo-600 font-bold py-4 px-8 rounded-2xl text-xl shadow-md border-2 border-indigo-100 hover:scale-105 transition-all flex items-center justify-center gap-3 w-full">
+                                            CARA BERMAIN <BookOpen size={24}/>
+                                        </button>
+                                    </div>
+
+                                    <div className="w-full border-t border-indigo-200/50 pt-4 text-center md:text-left">
+                                        <p className="text-xs font-bold text-indigo-800 uppercase tracking-widest mb-1">Ide Permainan oleh</p>
+                                        <p className="text-sm font-black text-indigo-900">Abdul Rahmat, S.Pd</p>
+                                        <p className="text-xs text-indigo-700 font-medium">SDN 011 Balikpapan Tengah</p>
+                                        <p className="text-[10px] text-indigo-600 mt-1">Kontak: 081351767574</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {gameState === 'TUTORIAL' && <TutorialScreen onBack={() => setGameState('INTRO')} />}
+
+                    {gameState === 'SETUP' && (
+                        <div className="h-full flex items-center justify-center p-4">
+                            <div className="glass-panel p-8 rounded-[2rem] shadow-2xl max-w-xl w-full animate-bounce-in overflow-y-auto max-h-[90vh]">
+                                <h2 className="text-3xl font-black text-center text-indigo-900 mb-4 font-display">DATA AGEN</h2>
+                                
+                                <div className="mb-6">
+                                    <label className="block text-sm font-bold text-slate-600 mb-2 text-center uppercase tracking-wide">Jumlah Pemain</label>
+                                    <div className="grid grid-cols-4 gap-2 mb-4">
+                                        {[1, 2, 3, 4].map(n => (
+                                            <button 
+                                                key={n} 
+                                                onClick={() => setPlayerCount(n)} 
+                                                className={`font-black text-xl py-3 rounded-xl border-2 transition-all hover:-translate-y-1 ${playerCount === n ? 'bg-indigo-600 text-white border-indigo-700 shadow-lg' : 'bg-white text-indigo-400 border-indigo-100'}`}
+                                            >
+                                                {n}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3 mb-8">
+                                    <label className="block text-sm font-bold text-slate-600 text-center uppercase tracking-wide">Nama Pemain</label>
+                                    {Array.from({ length: playerCount }).map((_, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold ${i===0?'bg-indigo-500':i===1?'bg-red-500':i===2?'bg-green-500':'bg-orange-500'}`}>{i+1}</div>
+                                            <input 
+                                                type="text" 
+                                                value={playerNames[i]} 
+                                                onChange={(e) => handleNameChange(i, e.target.value)}
+                                                className="w-full bg-white/80 border-2 border-indigo-100 rounded-xl px-4 py-2 font-bold text-slate-800 focus:bg-white"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <button onClick={startGame} className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg border-b-4 border-green-700 active:border-b-0 active:translate-y-1 text-xl transition-all">MULAI MAIN</button>
+                                <button onClick={() => setGameState('INTRO')} className="w-full text-slate-500 font-bold mt-4 text-sm hover:text-slate-700">KEMBALI</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {gameState === 'PLAY' && (
+                        <div className="h-full flex flex-col pt-16 pb-4 px-2 overflow-hidden">
+                            
+                            <div className="flex justify-between items-center px-4 md:px-8 py-2 w-full max-w-7xl mx-auto z-20">
+                                <div className="bg-white/90 backdrop-blur-md border border-red-200 px-4 py-1.5 rounded-full font-black text-red-600 shadow-md flex items-center gap-2">
+                                    <Clock size={18}/> {formatTime(timeLeft)}
+                                </div>
+                                <div className="bg-white/95 backdrop-blur px-4 py-1.5 rounded-full font-bold text-sm md:text-base text-indigo-900 shadow-xl border-b-2 border-indigo-200 animate-pulse text-center truncate max-w-[50%]">
+                                    {message}
+                                </div>
+                            </div>
+                            
+                            <div className="flex flex-row items-center justify-center gap-4 md:gap-12 w-full max-w-7xl mx-auto shrink-0 mb-2 z-20">
+                                <div className="flex flex-col items-center">
+                                    <span className="text-white text-[10px] md:text-xs font-bold bg-red-600 px-3 py-1 rounded-full mb-1 shadow border border-red-400">JENIS KORUPSI</span>
+                                    <div className="relative w-20 h-28 md:w-28 md:h-40">
+                                        {globalSlots.corruption.length === 0 && (
+                                            <div className="w-full h-full bg-red-100/50 border-2 border-dashed border-red-400 rounded-xl flex items-center justify-center shadow-inner absolute top-0 left-0">
+                                                <span className="text-red-300 text-3xl opacity-50">🚫</span>
+                                            </div>
+                                        )}
+                                        {globalSlots.corruption.map((c, i) => (
+                                            <div key={i} className="absolute top-0 left-0 w-full h-full" style={{zIndex: i, transform: `translate(${i*2}px, ${i*2}px)`}}>
+                                                <Card data={c} size="sm" isPlayable={false} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="relative h-20 w-40 flex items-center justify-center">
+                                    {!holdingCard && phase === 'DRAW' && (
+                                        <button onClick={() => setIsDeckOpen(true)} className="bg-yellow-400 hover:bg-yellow-300 text-yellow-900 font-black py-2 px-6 rounded-2xl shadow-[0_4px_0_rgba(202,138,4,1)] active:translate-y-1 active:shadow-none text-lg transition-all border-2 border-yellow-200 animate-bounce whitespace-nowrap">
+                                            AMBIL KARTU
+                                        </button>
+                                    )}
+                                    {holdingCard && (
+                                        <div className="flex items-center gap-3 animate-bounce-in bg-white/60 p-2 rounded-xl backdrop-blur-md border border-white/50 shadow-lg">
+                                            <div className="scale-75 origin-left shadow-xl rotate-3"><Card data={holdingCard} size="sm" isPlayable={false}/></div>
+                                            <div className="flex flex-col gap-1">
+                                                <span className="text-[9px] font-black bg-slate-800 text-white px-2 py-0.5 rounded text-center uppercase tracking-wide">DITANGAN</span>
+                                                <button onClick={discardFromHand} className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-lg shadow-md border-b-2 border-red-700 active:border-b-0 active:translate-y-0.5 text-xs flex items-center gap-1 justify-center"><Trash2 size={12}/> BUANG</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex flex-col items-center">
+                                    <span className="text-white text-[10px] md:text-xs font-bold bg-purple-600 px-3 py-1 rounded-full mb-1 shadow border border-purple-400">LAWAN KORUPSI</span>
+                                    <div className="relative w-20 h-28 md:w-28 md:h-40">
+                                        {globalSlots.counter.length === 0 && (
+                                            <div className="w-full h-full bg-purple-100/50 border-2 border-dashed border-purple-400 rounded-xl flex items-center justify-center shadow-inner absolute top-0 left-0">
+                                                <span className="text-purple-300 text-3xl opacity-50">🛡️</span>
+                                            </div>
+                                        )}
+                                        {globalSlots.counter.map((c, i) => (
+                                            <div key={i} className="absolute top-0 left-0 w-full h-full" style={{zIndex: i, transform: `translate(${i*2}px, ${i*2}px)`}}>
+                                                <Card data={c} size="sm" isPlayable={false} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {isDeckOpen && (
+                                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setIsDeckOpen(false)}>
+                                    <div className="bg-white rounded-3xl p-8 max-w-3xl w-full shadow-2xl border-4 border-white overflow-y-auto max-h-full" onClick={e => e.stopPropagation()}>
+                                        <h3 className="text-3xl font-black text-center text-indigo-900 mb-8">PILIH SUMBER KARTU</h3>
+                                        <div className="flex flex-col md:flex-row gap-8 justify-center items-stretch">
+                                            <div className="flex-1 flex flex-col items-center">
+                                                <button onClick={() => drawCard('DECK')} className="relative w-56 h-80 rounded-3xl shadow-2xl hover:scale-105 transition-all duration-300 group overflow-hidden border-4 border-slate-700">
+                                                    <img src="https://i.imgur.com/I1nfsZG.png" alt="Dek Tertutup" className="w-full h-full object-cover" />
+                                                    <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <span className="text-white font-black text-2xl tracking-widest drop-shadow-md">AMBIL</span>
+                                                    </div>
+                                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-slate-900/80 text-white text-xs px-3 py-1 rounded-full font-bold border border-slate-500">
+                                                        {deck.length} Kartu
+                                                    </div>
+                                                </button>
+                                            </div>
+                                            <div className="flex-1 bg-slate-50 rounded-2xl border-4 border-dashed border-slate-300 p-4 flex flex-col items-center justify-center min-h-[16rem]">
+                                                <h4 className="font-bold text-slate-400 mb-4 text-sm uppercase">Tumpukan Terbuka</h4>
+                                                {discardPile.length > 0 ? (
+                                                    <div className="flex gap-2 flex-wrap justify-center">
+                                                        {discardPile.slice(0, 3).map((c, i) => (
+                                                            <div key={c.uniqueId} className="relative hover:scale-110 transition-transform cursor-pointer z-10 hover:z-20" onClick={() => drawCard(c)}>
+                                                                <div className="absolute -top-2 -right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow z-20 border border-white">{i+1}</div>
+                                                                <Card data={c} size="sm" isPlayable={false}/>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : <span className="text-slate-300 font-bold">Kosong</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex-1 overflow-y-auto custom-scrollbar pb-20 w-full max-w-[95vw] mx-auto">
+                                <div className={getGridClass(players.length)}>
+                                    {players.map((p, idx) => {
+                                        const isMyTurn = turn === idx;
+                                        return (
+                                            <div key={idx} className={`relative rounded-[1.5rem] border-4 p-3 transition-all duration-500 flex flex-col ${p.color} ${isMyTurn ? 'ring-4 ring-yellow-400 shadow-2xl scale-[1.01] opacity-100 z-10' : 'opacity-90 scale-[0.98] grayscale-[0.1]'}`}>
+                                                <div className="flex justify-between items-center mb-2 px-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="bg-white/90 px-2 py-1 rounded-full font-black text-slate-800 shadow-sm flex items-center gap-1 border border-slate-100 text-sm">
+                                                            <User size={16} className={isMyTurn ? "text-indigo-600" : "text-slate-400"}/> 
+                                                            <span className="font-black text-slate-800 text-sm">{p.name}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {isMyTurn && <span className="bg-yellow-400 text-yellow-900 text-[10px] font-black px-2 py-1 rounded-full animate-pulse shadow-sm">GILIRANMU</span>}
+                                                        <div className="bg-white/90 px-3 py-1 rounded-full font-bold text-green-700 shadow-sm flex items-center gap-1 border border-green-100 text-sm">
+                                                            <Trophy size={14}/> {p.score}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 bg-white/40 rounded-xl border border-white/30 backdrop-blur-sm p-2 overflow-x-auto custom-scrollbar flex items-center">
+                                                    <div className="flex flex-nowrap gap-2 min-w-min mx-auto">
+                                                        <BoardSlot index={0} card={p.board[0]} isActive={isMyTurn} onDrop={placeCard} />
+                                                        <div className="self-center text-slate-400/50"><ArrowRight size={20} /></div>
+                                                        <BoardSlot index={1} card={p.board[1]} isActive={isMyTurn} onDrop={placeCard} />
+                                                        <div className="w-px bg-slate-400/30 mx-1 h-20 self-center"></div>
+                                                        {[2,3,4,5].map(s => <BoardSlot key={s} index={s} card={p.board[s]} isActive={isMyTurn} onDrop={placeCard} />)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {gameState === 'END' && winner && (
+                        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur flex items-center justify-center p-4">
+                            <div className="bg-white rounded-[3rem] p-10 max-w-4xl w-full text-center shadow-2xl animate-bounce-in border-8 border-yellow-400 overflow-y-auto max-h-[90vh] custom-scrollbar">
+                                <div className="text-8xl mb-4 animate-bounce">🏆</div>
+                                <h2 className="text-5xl font-black text-indigo-900 mb-2 font-display">SELAMAT!</h2>
+                                <h3 className="text-3xl font-bold text-yellow-500 mb-2">{winner.name} MENANG!</h3>
+                                <p className="text-xl font-bold text-slate-600 mb-8">Total Skor: {winner.score}</p>
+                                
+                                <div className="bg-blue-50 p-6 rounded-3xl mb-8 text-left border border-blue-100">
+                                    <h4 className="font-black text-indigo-900 text-lg mb-4 text-center border-b pb-2 border-blue-200">REFLEKSI NILAI ANTI KORUPSI</h4>
+                                    <div className="flex flex-wrap justify-center gap-4">
+                                        {/* Display FULL SET based on winner's hero dimension */}
+                                        {getWinningSet(winner).map((card, i) => (
+                                            card && (
+                                                <div key={i} className="scale-75 origin-top">
+                                                    <Card data={card} size="md" isPlayable={false}/>
+                                                </div>
+                                            )
+                                        ))}
+                                    </div>
+                                    <p className="text-center text-slate-500 italic mt-4 text-sm">
+                                        "Mari diskusikan nilai-nilai dan sikap yang telah kamu kumpulkan. Bagaimana penerapannya dalam kehidupan sehari-hari?"
+                                    </p>
+                                </div>
+
+                                <button onClick={() => setGameState('INTRO')} className="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-12 rounded-full text-xl shadow-xl hover:scale-105 transition-all">MAIN LAGI</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<HakiGame />);
+    </script>
+</body>
+</html>
